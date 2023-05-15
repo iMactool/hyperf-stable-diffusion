@@ -1,10 +1,11 @@
 # imactool/hyperf-stable-diffusion
 
 > 基于 `rulilg/laravel-stable-diffusion` 包直接平移并适配了 hyperf 框架。
-> 完全保持和`rulilg/laravel-stable-diffusion`包一致的调用方式。
+
+> 我对它进行了一些改造，大部分功能保持了相同。在这里感谢一下 RuliLG ，实现了如此强大好用的 stable-diffusion 组件。
 
 
-原作：[RuliLG](https://github.com/RuliLG)，特此鸣谢!
+鸣谢：原作：[RuliLG](https://github.com/RuliLG)，特此鸣谢!
 
 ## 安装
 

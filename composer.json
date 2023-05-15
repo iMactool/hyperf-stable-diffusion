@@ -4,7 +4,9 @@
     "license": "MIT",
     "keywords": [
         "php",
-        "hyperf"
+        "hyperf",
+        "stable-diffusion",
+        "replicate"
     ],
     "description": "hyperf-stable-diffusion",
     "autoload": {
