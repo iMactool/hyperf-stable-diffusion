@@ -22,8 +22,8 @@ class CreateStableDiffusionResultsTable extends Migration
         Schema::create('stable_diffusion_results', function (Blueprint $table) {
             $table->bigIncrements('id');
             $table->string('replicate_id')->unique();
-            $table->string('user_prompt');
-            $table->string('full_prompt');
+            $table->text('user_prompt');
+            $table->mediumText('full_prompt');
             $table->string('url');
             $table->string('status', 30);
             $table->json('output')->nullable();
