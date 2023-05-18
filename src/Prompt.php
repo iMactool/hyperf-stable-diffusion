@@ -42,7 +42,7 @@ namespace Imactool\HyperfStableDiffusion;
             return $this;
         }
 
-        public function toString(): string
+        public function toString($inputParams = []): string
         {
             $prompt = $this->prompt;
             if ($this->author) {
@@ -59,6 +59,14 @@ namespace Imactool\HyperfStableDiffusion;
 
             if (! empty($this->finishingTouches)) {
                 $prompt .= ', ' . implode(', ', array_values(array_unique($this->finishingTouches)));
+            }
+
+            if (! empty($inputParams)) {
+                $unsetKey = 'image';
+                if (array_key_exists($unsetKey, $inputParams)) {
+                    unset($inputParams[$unsetKey]);
+                }
+                $prompt .= ', ' . implode(', ', array_values(array_unique($inputParams)));
             }
 
             return $prompt;

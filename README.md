@@ -4,6 +4,12 @@
 
 > 我对它进行了一些改造，大部分功能保持了相同。在这里感谢一下 RuliLG ，实现了如此强大好用的 stable-diffusion 组件。
 
+基于 Replicate API 的 Stable Diffusion 实现。
+- 🎨 Built-in prompt helper to create better images
+- 🚀 Store the results in your database
+- 🎇 Generate multiple images in the same API call
+- 💯 Supports both (text to image) and (image to image)
+
 
 鸣谢：原作：[RuliLG](https://github.com/RuliLG)，特此鸣谢!
 
@@ -22,7 +28,7 @@ php bin/hyperf.php migrate
 ```
 至此，配置完成。
 
-```
+```php
 return [
     'url' => env('REPLICATE_URL', 'https://api.replicate.com/v1/predictions'),
     'token' => env('REPLICATE_TOKEN'),
@@ -35,8 +41,8 @@ return [
 
 ## 使用
 
-### 生成
-```
+### 文字生成图片（Text to Image)
+```php
 use Imactool\HyperfStableDiffusion\Prompt;
 use Imactool\HyperfStableDiffusion\StableDiffusion;
 
@@ -52,9 +58,36 @@ use Imactool\HyperfStableDiffusion\StableDiffusion;
         )->generate(3);
 ```
 
+### 图片生成图片(Image to Image)
+```php
+use Imactool\HyperfStableDiffusion\Prompt;
+use Imactool\HyperfStableDiffusion\StableDiffusion;
+use Intervention\Image\ImageManager;
+
+//这里使用了 intervention/image 扩展来处理图片文件，你也可以更换为其他的
+ $sourceImg =  (string) (new ImageManager(['driver' => 'imagick']))->make('path/image/source.png')->encode('data-url');
+
+$prompt = 'Petite 21-year-old Caucasian female gamer streaming from her bedroom with pastel pink pigtails and gaming gear. Dynamic and engaging image inspired by colorful LED lights and the energy of Twitch culture, in 1920x1080 resolution.';
+$result = StableDiffusion::make()
+    ->converVersion('a991dcab77024471af6a89ef758d98d1a54c5a25fc52a06ccfd7754b7ad04b35')
+    ->withPrompt(
+        Prompt::make()
+            ->with($prompt)
+    )
+    ->inputParams('image',$sourceImg)
+    ->inputParams('negative_prompt', 'disfigured, kitsch, ugly, oversaturated, greain, low-res, Deformed, blurry, bad anatomy, disfigured, poorly drawn face, mutation, mutated, extra limb, ugly, poorly drawn hands, missing limb, blurry, floating limbs, disconnected limbs, malformed hands, blur, out of focus, long neck, long body, ugly, disgusting, poorly drawn, childish, mutilated, mangled, old, surreal, calligraphy, sign, writing, watermark, text, body out of frame, extra legs, extra arms, extra feet, out of frame, poorly drawn feet, cross-eye, blurry, bad anatomy')
+    ->inputParams('strength', 0.5)
+    ->inputParams('upscale', 2)
+    ->inputParams('num_inference_steps', 25)
+    ->inputParams('guidance_scale', 7.5)
+    ->inputParams('scheduler', 'EulerAncestralDiscrete')
+    ->generate(1);
+```
+
+
 ### 查询结果
 
-```
+```php
 use Imactool\HyperfStableDiffusion\StableDiffusion;
  $freshResults = StableDiffusion::get($replicate_id);
 
