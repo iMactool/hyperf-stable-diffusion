@@ -16,6 +16,7 @@ use Hyperf\DbConnection\Model\Model;
 /**
  * @property int $id
  * @property string $replicate_id
+ * @property string $platform
  * @property string $user_prompt
  * @property string $full_prompt
  * @property string $url
@@ -36,7 +37,7 @@ class StableDiffusionResult extends Model
     /**
      * The attributes that are mass assignable.
      */
-    protected array $fillable = ['replicate_id','user_prompt','full_prompt','url','status', 'output', 'error', 'predict_time'];
+    protected array $fillable = ['replicate_id', 'platform', 'user_prompt', 'full_prompt', 'url', 'status', 'output', 'error', 'predict_time'];
 
     /**
      * The attributes that should be cast to native types.

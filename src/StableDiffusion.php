@@ -15,66 +15,20 @@ namespace Imactool\HyperfStableDiffusion;
     use Hyperf\Context\ApplicationContext;
     use Hyperf\Guzzle\ClientFactory;
     use Imactool\HyperfStableDiffusion\Models\StableDiffusionResult;
-    use PDOException;
+    use Imactool\HyperfStableDiffusion\Uri\DreamboothApiV4;
+    use Imactool\HyperfStableDiffusion\Uri\StableDiffusionApiV3;
     use Psr\Http\Client\ClientInterface;
 
     class StableDiffusion
     {
-        private array $inputParams = [];
+        private array $payload = [];
 
-        private string $baseUrl = '';
+        private $apiBase;
 
-        private string $token = '';
+        private static $platform = 'stablediffusionapi';
 
-        private string $version = '';
-
-        private function __construct(
-            public ?Prompt $prompt = null,
-            private int $width = 512,
-            private int $height = 512
-        ) {
-        }
-
-        public function converUrl(string $url): self
+        private function __construct()
         {
-            $this->baseUrl = $url;
-            return $this;
-        }
-
-        public function getBaseUrl(): string
-        {
-            if (empty($this->baseUrl)) {
-                $this->baseUrl = config('stable-diffusion.url');
-            }
-            return $this->baseUrl;
-        }
-
-        public function converToken(string $token): self
-        {
-            $this->token = $token;
-            return $this;
-        }
-
-        public function getToken(): string
-        {
-            if (empty($this->token)) {
-                $this->token = config('stable-diffusion.token');
-            }
-            return $this->token;
-        }
-
-        public function converVersion(string $version): self
-        {
-            $this->version = $version;
-            return $this;
-        }
-
-        public function getVersion(): string
-        {
-            if (empty($this->version)) {
-                $this->version = config('stable-diffusion.version');
-            }
-            return $this->version;
         }
 
         public static function make(): self
@@ -82,167 +36,182 @@ namespace Imactool\HyperfStableDiffusion;
             return new self();
         }
 
-        public function getV2(string $replicateId)
+        public function useStableDiffusionApiV3(): StableDiffusion
         {
-            $result = StableDiffusionResult::query()->where('replicate_id', $replicateId)->first();
-            assert($result !== null, 'Unknown id');
-            $idleStatuses = ['starting', 'processing'];
-            if (! in_array($result->status, $idleStatuses)) {
-                return $result;
-            }
-
-            $response = $this->client()->get($result->url);
-
-            if ($response->getStatusCode() !== 200) {
-                throw new Exception('Failed to retrieve data.');
-            }
-
-            $responseData = json_decode((string) $response->getBody(), true);
-
-            $result->status = Arr::get($responseData, 'status', $result->status);
-            $result->output = Arr::has($responseData, 'output') ? Arr::get($responseData, 'output') : null;
-            $result->error = Arr::get($responseData, 'error');
-            $result->predict_time = Arr::get($responseData, 'metrics.predict_time');
-            $result->save();
-
-            return $result;
+            $this->apiBase = ApplicationContext::getContainer()->get(StableDiffusionApiV3::class);
+            return $this;
         }
 
-        public static function get(string $replicateId)
+        public function useDreamboothApiV4(): StableDiffusion
         {
-            $result = StableDiffusionResult::query()->where('replicate_id', $replicateId)->first();
-            assert($result !== null, 'Unknown id');
-            $idleStatuses = ['starting', 'processing'];
-            if (! in_array($result->status, $idleStatuses)) {
-                return $result;
-            }
-
-            $response = self::make()
-                ->client()
-                ->get($result->url);
-
-            if ($response->getStatusCode() !== 200) {
-                throw new Exception('Failed to retrieve data.');
-            }
-
-            $responseData = json_decode((string) $response->getBody(), true);
-
-            $result->status = Arr::get($responseData, 'status', $result->status);
-            $result->output = Arr::has($responseData, 'output') ? Arr::get($responseData, 'output') : null;
-            $result->error = Arr::get($responseData, 'error');
-            $result->predict_time = Arr::get($responseData, 'metrics.predict_time');
-            $result->save();
-
-            return $result;
-        }
-
-        public function withPrompt(Prompt $prompt)
-        {
-            $this->prompt = $prompt;
+            $this->apiBase = ApplicationContext::getContainer()->get(DreamboothApiV4::class);
             return $this;
         }
 
        /**
-        * except prompt,other API parameters.
+        * API parameters.
         *
         * @param string $key 参数本身
         * @param mixed  $value 参数值
         *
         * @return $this
         */
-       public function inputParams(string $key, mixed $value)
+       public function withPayload(string $key, mixed $value)
        {
-           $this->inputParams[$key] = $value;
+           $this->payload[$key] = $value;
            return $this;
        }
 
-        public function width(int $width)
+       public function payloadArr2String(): string
+       {
+           $payload = '';
+           $payload .= ', ' . implode(', ', array_values(array_unique($this->payload)));
+           return $payload;
+       }
+
+        public function text2img()
         {
-            assert($width > 0, 'Width must be greater than 0');
-            if ($width <= 768) {
-                assert($width <= 768 && $this->width <= 1024, 'Width must be lower than 768 and height lower than 1024');
-            } else {
-                assert($width <= 1024 && $this->width <= 768, 'Width must be lower than 1024 and height lower than 768');
+            if (empty($this->payload)) {
+                throw new Exception('Invalid payload. @see https://stablediffusionapi.com/docs/');
             }
-            $this->width = $width;
-            return $this;
-        }
-
-        public function height(int $height)
-        {
-            assert($height > 0, 'Height must be greater than 0');
-            if ($height <= 768) {
-                assert($height <= 768 && $this->width <= 1024, 'Height must be lower than 768 and width lower than 1024');
-            } else {
-                assert($height <= 1024 && $this->width <= 768, 'Height must be lower than 1024 and width lower than 768');
-            }
-
-            $this->height = $height;
-
-            return $this;
-        }
-
-        public function generate(int $numberOfImages)
-        {
-            assert($this->prompt !== null, 'You must provide a prompt');
-            assert($numberOfImages > 0, 'You must provide a number greater than 0');
-
-            $input = [
-                'prompt' => $this->prompt->toString(),
-                'num_outputs' => $numberOfImages,
-            ];
-
-            $input = array_merge($input, $this->inputParams);
 
             $response = $this->client()->post(
-                $this->getBaseUrl(),
+                $this->apiBase->text2imgUrl(),
                 [
-                    'json' => [
-                        'version' => $this->getVersion(),
-                        'input' => $input,
-                    ],
+                    'json' => $this->payload,
+                ]
+            );
+
+            $result = json_decode($response->getBody()->getContents(), true);
+            var_dump(['$result 请求结果' => $result]);
+            $this->saveResult($result, $this->apiBase->text2imgUrl());
+            return $result;
+        }
+
+        public function img2img()
+        {
+            if (empty($this->payload)) {
+                throw new Exception('Invalid payload. @see https://stablediffusionapi.com/docs/');
+            }
+
+            $response = $this->client()->post(
+                $this->apiBase->img2imgUrl(),
+                [
+                    'json' => $this->payload,
+                ]
+            );
+
+            $result = json_decode($response->getBody()->getContents(), true);
+            var_dump(['$result 请求结果' => $result]);
+            $this->saveResult($result, $this->apiBase->img2imgUrl());
+            return $result;
+        }
+
+        public function inpaint()
+        {
+            if (empty($this->payload)) {
+                return throw new Exception('Invalid payload. @see https://stablediffusionapi.com/docs/');
+            }
+
+            $response = $this->client()->post(
+                $this->apiBase->inpaintUrl(),
+                [
+                    'json' => $this->payload,
                 ]
             );
 
             $result = json_decode($response->getBody()->getContents(), true);
 
-            $data = [
-                'replicate_id' => $result['id'],
-                'user_prompt' => $this->prompt->userPrompt(),
-                'full_prompt' => $this->prompt->toString($this->inputParams),
-                'url' => $result['urls']['get'],
-                'status' => $result['status'],
-                'output' => isset($result['output']) ? $result['output'] : null,
-                'error' => $result['error'],
-                'predict_time' => null,
-            ];
+            $this->saveResult($result, $this->apiBase->inpaintUrl());
+            return $result;
+        }
 
-            try {
-                StableDiffusionResult::create($data);
-            } catch (Exception $exception) {
-                $msg = $exception->getMessage();
-                var_dump(['data insert error' => $msg]);
-                if ($exception instanceof PDOException) {
-                    $errorInfo = $exception->errorInfo;
-                    $code = $errorInfo[1];
-                    //			        $sql_state = $errorInfo[0];
-                    //			        $msg = isset($errorInfo[2]) ? $errorInfo[2] : $sql_state;
-                }
-                if ((int) $code !== 1062) {
-                    return $result;
-                }
+        public function fetch($id)
+        {
+            $result = StableDiffusionResult::query()->where('replicate_id', $id)->first();
+            assert($result !== null, 'Unknown id');
+            $idleStatuses = ['success'];
+            if (in_array($result->status, $idleStatuses)) {
+                return $result;
             }
 
+            $url = '';
+            if ($this->apiBase instanceof StableDiffusionApiV3) {
+                $url = $this->apiBase->fetchUrl($id);
+            }
+            if ($this->apiBase instanceof DreamboothApiV4) {
+                $url = $this->apiBase->fetchUrl();
+            }
+
+            $response = $this->client()->post(
+                $url,
+                [
+                    'json' => $this->payload,
+                ]
+            );
+
+            $responseData = json_decode($response->getBody()->getContents(), true);
+
+            $result->status = Arr::get($responseData, 'status', $result->status);
+            $result->output = Arr::has($responseData, 'output') ? Arr::get($responseData, 'output') : null;
+            $result->error = Arr::has($responseData, 'error') ? Arr::get($responseData, 'error') : null;
+            $result->save();
             return $result;
+        }
+
+        public function systemLoad()
+        {
+            if (! $this->apiBase instanceof StableDiffusionApiV3) {
+                return throw new Exception('「' . $this->apiBase . '」并不是一个 StableDiffusionApiV3 实例');
+            }
+
+            $response = $this->client()->post(
+                $this->apiBase->systemLoadUrl(),
+                [
+                    'json' => $this->payload,
+                ]
+            );
+
+            return json_decode($response->getBody()->getContents(), true);
+        }
+
+          public function superResolution()
+          {
+              if (! $this->apiBase instanceof StableDiffusionApiV3) {
+                  return throw new Exception('「' . $this->apiBase . '」并不是一个 StableDiffusionApiV3 实例');
+              }
+
+              $response = $this->client()->post(
+                  $this->apiBase->superResolutionUrl(),
+                  [
+                      'json' => $this->payload,
+                  ]
+              );
+
+              return json_decode($response->getBody()->getContents(), true);
+          }
+
+        private function saveResult($result, $url)
+        {
+            $data = [
+                'replicate_id' => Arr::has($result, 'id') ? Arr::get($result, 'id') : 0,
+                'platform' => self::$platform,
+                'user_prompt' => isset($this->payload['prompt']) ? $this->payload['prompt'] : '',
+                'full_prompt' => $this->payloadArr2String(),
+                'url' => $url,
+                'status' => Arr::has($result, 'status') ? Arr::get($result, 'status') : '',
+                'output' => Arr::has($result, 'output') ? Arr::get($result, 'output') : '',
+                'error' => Arr::has($result, 'error') ? Arr::get($result, 'error') : null,
+                'predict_time' => Arr::has($result, 'generationTime') ? Arr::get($result, 'generationTime') : null,
+            ];
+            StableDiffusionResult::create($data);
         }
 
         private function client(): ClientInterface
         {
             return ApplicationContext::getContainer()->get(ClientFactory::class)->create([
-                //                'base_uri' => $this->getBaseUrl(),
                 //                'timeout' => 10,
                 'headers' => [
-                    'Authorization' => 'Token ' . $this->getToken(),
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json',
                 ],

@@ -4,7 +4,7 @@
 
 > 我对它进行了一些改造，大部分功能保持了相同。在这里感谢一下 RuliLG ，实现了如此强大好用的 stable-diffusion 组件。
 
-基于 Replicate API 的 Stable Diffusion 实现。
+基于 Replicate API 和 stablediffusionapi 的 Stable Diffusion 实现。
 - 🎨 Built-in prompt helper to create better images
 - 🚀 Store the results in your database
 - 🎇 Generate multiple images in the same API call
@@ -19,6 +19,7 @@
 composer require imactool/hyperf-stable-diffusion
 
 ```
+注意 表新增了`platform`平台字段。-- 后续会使用迁移增加，目前不考虑 :)
 
 ## 发布配置（包含配置文件和迁移文件)
 
@@ -44,9 +45,9 @@ return [
 ### 文字生成图片（Text to Image)
 ```php
 use Imactool\HyperfStableDiffusion\Prompt;
-use Imactool\HyperfStableDiffusion\StableDiffusion;
+use Imactool\HyperfStableDiffusion\Replicate;
 
-   $result = StableDiffusion::make()->withPrompt(
+   $result = Replicate::make()->withPrompt(
             Prompt::make()
                 ->with('a panda sitting on the streets of New York after a long day of walking')
                 ->photograph()
@@ -61,14 +62,14 @@ use Imactool\HyperfStableDiffusion\StableDiffusion;
 ### 图片生成图片(Image to Image)
 ```php
 use Imactool\HyperfStableDiffusion\Prompt;
-use Imactool\HyperfStableDiffusion\StableDiffusion;
+use Imactool\HyperfStableDiffusion\Replicate;
 use Intervention\Image\ImageManager;
 
 //这里使用了 intervention/image 扩展来处理图片文件，你也可以更换为其他的
  $sourceImg =  (string) (new ImageManager(['driver' => 'imagick']))->make('path/image/source.png')->encode('data-url');
 
 $prompt = 'Petite 21-year-old Caucasian female gamer streaming from her bedroom with pastel pink pigtails and gaming gear. Dynamic and engaging image inspired by colorful LED lights and the energy of Twitch culture, in 1920x1080 resolution.';
-$result = StableDiffusion::make()
+$result = Replicate::make()
     ->converVersion('a991dcab77024471af6a89ef758d98d1a54c5a25fc52a06ccfd7754b7ad04b35')
     ->withPrompt(
         Prompt::make()
@@ -88,8 +89,8 @@ $result = StableDiffusion::make()
 ### 查询结果
 
 ```php
-use Imactool\HyperfStableDiffusion\StableDiffusion;
- $freshResults = StableDiffusion::get($replicate_id);
+use Imactool\HyperfStableDiffusion\Replicate;
+ $freshResults = Replicate::get($replicate_id);
 
 ```
 
@@ -156,6 +157,33 @@ Additionally, you can add custom styles with the following methods:
 - `effect(string $effect)`: to add a finishing touch to the prompt. You can add as many as you want.
 
 To learn more on how to build prompts for Stable Diffusion, please [enter this link](https://beta.dreamstudio.ai/prompt-guide).
+
+## 基于 stablediffusionapi 平台 [https://stablediffusionapi.com/docs/](https://stablediffusionapi.com/docs/)
+或者 [Postman Collection](https://documenter.getpostman.com/view/18679074/2s83zdwReZ)
+
+### 文字生成图片（Text to Image)
+```php
+use Imactool\HyperfStableDiffusion\StableDiffusion;
+
+ $res = StableDiffusion::make()
+                    ->useDreamboothApiV4()
+                    ->withPayload('key', '')
+                    ->withPayload('model_id', 'anything-v4')
+                    ->withPayload('prompt', 'ultra realistic close up portrait ((beautiful pale cyberpunk female with heavy black eyeliner)), blue eyes, shaved side haircut, hyper detail, cinematic lighting, magic neon, dark red city, Canon EOS R3, nikon, f/1.4, ISO 200, 1/160s, 8K, RAW, unedited, symmetrical balance, in-frame, 8K')
+                    ->withPayload('negative_prompt', 'painting, extra fingers, mutated hands, poorly drawn hands, poorly drawn face, deformed, ugly, blurry, bad anatomy, bad proportions, extra limbs, cloned face, skinny, glitchy, double torso, extra arms, extra hands, mangled fingers, missing lips, ugly face, distorted face, extra legs, anime')
+                    ->withPayload('width', '512')
+                    ->withPayload('height', '512')
+                    ->withPayload('samples', '1')
+                    ->withPayload('num_inference_steps', '30')
+                    ->withPayload('seed', null)
+                    ->withPayload('guidance_scale', '7.5')
+                    ->withPayload('webhook', null)
+                    ->withPayload('track_id', null)
+                    ->text2img();
+
+                var_dump( $res);
+
+```
 
 
 ## License
