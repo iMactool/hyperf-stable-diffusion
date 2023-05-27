@@ -11,6 +11,7 @@
 namespace Imactool\HyperfStableDiffusion;
 
     use Exception;
+    use Hyperf\Codec\Json;
     use Hyperf\Collection\Arr;
     use Hyperf\Context\ApplicationContext;
     use Hyperf\Guzzle\ClientFactory;
@@ -27,25 +28,36 @@ namespace Imactool\HyperfStableDiffusion;
 
         private static $platform = 'stablediffusionapi';
 
-        private function __construct()
+        private function __construct(protected $apiVersion)
         {
+            $class = '\\Imactool\\HyperfStableDiffusion\\Uri\\' . $apiVersion;
+            if (! class_exists($class)) {
+                throw new Exception("Class {$class} not found");
+            }
+            $this->apiBase = ApplicationContext::getContainer()->get($class);
         }
 
-        public static function make(): self
+        // 获取( https://stablediffusionapi.com)支持的已被本SDK适配的API集合
+        public function supportApi(string $api = ''): array|string
         {
-            return new self();
+            $aiApis = [
+                'StableDiffusionApiV3', // Stable Diffusion V3 APIs comes with below features https://documenter.getpostman.com/view/18679074/2s83zdwReZ#c7e3c6a0-b57d-4d17-ad5a-c4eb8571021f
+                'DreamboothApiV4', // [Beta] DreamBooth API https://documenter.getpostman.com/view/18679074/2s83zdwReZ#27db9713-6068-41c2-8431-ada0d08d3cd5
+            ];
+
+            if ($api) {
+                if (in_array($api, $aiApis)) {
+                    return $aiApis[$api];
+                }
+                throw new Exception('无效 ' . $api . '。仅支持这些API' . Json::encode($aiApis));
+            }
+
+            return $aiApis;
         }
 
-        public function useStableDiffusionApiV3(): StableDiffusion
+        public static function make(string $witchAPi = 'StableDiffusionApiV3'): self
         {
-            $this->apiBase = ApplicationContext::getContainer()->get(StableDiffusionApiV3::class);
-            return $this;
-        }
-
-        public function useDreamboothApiV4(): StableDiffusion
-        {
-            $this->apiBase = ApplicationContext::getContainer()->get(DreamboothApiV4::class);
-            return $this;
+            return new StableDiffusion($witchAPi);
         }
 
        /**
@@ -83,7 +95,6 @@ namespace Imactool\HyperfStableDiffusion;
             );
 
             $result = json_decode($response->getBody()->getContents(), true);
-            var_dump(['$result 请求结果' => $result]);
             $this->saveResult($result, $this->apiBase->text2imgUrl());
             return $result;
         }
@@ -102,7 +113,7 @@ namespace Imactool\HyperfStableDiffusion;
             );
 
             $result = json_decode($response->getBody()->getContents(), true);
-            var_dump(['$result 请求结果' => $result]);
+
             $this->saveResult($result, $this->apiBase->img2imgUrl());
             return $result;
         }
