@@ -56,7 +56,8 @@ use Imactool\HyperfStableDiffusion\Replicate;
                 ->highlyDetailed()
                 ->dramaticLighting()
                 ->octaneRender()
-        )->generate(3);
+        )->inputParams('num_outputs', 1)
+        ->generate(); //根据不同的模型来传递生成的张数
 ```
 
 ### 图片生成图片(Image to Image)
@@ -82,7 +83,8 @@ $result = Replicate::make()
     ->inputParams('num_inference_steps', 25)
     ->inputParams('guidance_scale', 7.5)
     ->inputParams('scheduler', 'EulerAncestralDiscrete')
-    ->generate(1);
+    ->inputParams('num_outputs', 1)
+    ->generate();
 ```
 
 

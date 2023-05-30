@@ -184,14 +184,14 @@ namespace Imactool\HyperfStableDiffusion;
             return $this;
         }
 
-        public function generate(int $numberOfImages)
+        public function generate()
         {
             assert($this->prompt !== null, 'You must provide a prompt');
-            assert($numberOfImages > 0, 'You must provide a number greater than 0');
+//            assert($numberOfImages > 0, 'You must provide a number greater than 0');
 
             $input = [
                 'prompt' => $this->prompt->toString(),
-                'num_outputs' => $numberOfImages,
+                //                'num_outputs' => $numberOfImages,
             ];
 
             $input = array_merge($input, $this->inputParams);
