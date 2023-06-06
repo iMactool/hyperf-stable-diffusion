@@ -188,12 +188,15 @@ namespace Imactool\HyperfStableDiffusion;
         {
             assert($this->prompt !== null, 'You must provide a prompt');
 //            assert($numberOfImages > 0, 'You must provide a number greater than 0');
-
+            $input = [];
             $input = [
                 'prompt' => $this->prompt->toString(),
                 //                'num_outputs' => $numberOfImages,
             ];
 
+            if (isset($this->inputParams['prompts'])) {
+                unset($input['prompt']);
+            }
             $input = array_merge($input, $this->inputParams);
 
             $response = $this->client()->post(
