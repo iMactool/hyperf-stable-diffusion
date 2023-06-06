@@ -76,8 +76,12 @@ namespace Imactool\HyperfStableDiffusion;
 
        public function payloadArr2String(): string
        {
+           $payloadArr = $this->payload;
+           if (isset($payloadArr['prompt'])) {
+               unset($payloadArr['prompt']);
+           }
            $payload = '';
-           $payload .= ', ' . implode(', ', array_values(array_unique($this->payload)));
+           $payload .= ', ' . implode(', ', array_values(array_unique($payloadArr)));
            return $payload;
        }
 
