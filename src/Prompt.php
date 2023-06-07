@@ -66,6 +66,9 @@ namespace Imactool\HyperfStableDiffusion;
                 if (array_key_exists($unsetKey, $inputParams)) {
                     unset($inputParams[$unsetKey]);
                 }
+                if (array_key_exists('prompt', $inputParams)) {
+                    unset($inputParams['prompt']);
+                }
                 $prompt .= ', ' . implode(', ', array_values(array_unique($inputParams)));
             }
 

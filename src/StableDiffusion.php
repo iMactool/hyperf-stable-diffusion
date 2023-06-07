@@ -43,6 +43,7 @@ namespace Imactool\HyperfStableDiffusion;
             $aiApis = [
                 'StableDiffusionApiV3', // Stable Diffusion V3 APIs comes with below features https://documenter.getpostman.com/view/18679074/2s83zdwReZ#c7e3c6a0-b57d-4d17-ad5a-c4eb8571021f
                 'DreamboothApiV4', // [Beta] DreamBooth API https://documenter.getpostman.com/view/18679074/2s83zdwReZ#27db9713-6068-41c2-8431-ada0d08d3cd5
+                'EnterpriseApiV1', // [企业] Enterprise API  https://stablediffusionapi.com/docs/enterprise-plan/overview
             ];
 
             if ($api) {
@@ -206,20 +207,39 @@ namespace Imactool\HyperfStableDiffusion;
               return json_decode($response->getBody()->getContents(), true);
           }
 
+        public function controlnet()
+        {
+            if (empty($this->payload)) {
+                throw new Exception('Invalid payload. @see https://stablediffusionapi.com/docs/controlnet-main/');
+            }
+
+            $response = $this->client()->post(
+                'https://stablediffusionapi.com/api/v5/controlnet',
+                [
+                    'json' => $this->payload,
+                ]
+            );
+
+            return json_decode($response->getBody()->getContents(), true);
+//            $this->saveResult($result, $this->apiBase->text2imgUrl());
+        }
+
         private function saveResult($result, $url)
         {
-            $data = [
-                'replicate_id' => Arr::has($result, 'id') ? Arr::get($result, 'id') : 0,
-                'platform' => self::$platform,
-                'user_prompt' => isset($this->payload['prompt']) ? $this->payload['prompt'] : '',
-                'full_prompt' => $this->payloadArr2String(),
-                'url' => $url,
-                'status' => Arr::has($result, 'status') ? Arr::get($result, 'status') : '',
-                'output' => Arr::has($result, 'output') ? Arr::get($result, 'output') : '',
-                'error' => Arr::has($result, 'error') ? Arr::get($result, 'error') : null,
-                'predict_time' => Arr::has($result, 'generationTime') ? Arr::get($result, 'generationTime') : null,
-            ];
-            StableDiffusionResult::create($data);
+            if (Arr::get($result, 'status') !== 'error') {
+                $data = [
+                    'replicate_id' => Arr::has($result, 'id') ? Arr::get($result, 'id') : 0,
+                    'platform' => self::$platform,
+                    'user_prompt' => isset($this->payload['prompt']) ? $this->payload['prompt'] : '',
+                    'full_prompt' => $this->payloadArr2String(),
+                    'url' => $url,
+                    'status' => Arr::has($result, 'status') ? Arr::get($result, 'status') : '',
+                    'output' => Arr::has($result, 'output') ? Arr::get($result, 'output') : '',
+                    'error' => Arr::has($result, 'error') ? Arr::get($result, 'error') : null,
+                    'predict_time' => Arr::has($result, 'generationTime') ? Arr::get($result, 'generationTime') : null,
+                ];
+                StableDiffusionResult::create($data);
+            }
         }
 
         private function client(): ClientInterface

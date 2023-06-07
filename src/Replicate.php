@@ -30,6 +30,8 @@ namespace Imactool\HyperfStableDiffusion;
 
         private string $version = '';
 
+        private string $webhook = '';
+
         private function __construct(
             public ?Prompt $prompt = null,
             private int $width = 512,
@@ -158,6 +160,12 @@ namespace Imactool\HyperfStableDiffusion;
             return $this;
         }
 
+        public function setWebHook(string $url)
+        {
+            $this->webhook = $url;
+            return $this;
+        }
+
         public function width(int $width)
         {
             assert($width > 0, 'Width must be greater than 0');
@@ -199,13 +207,19 @@ namespace Imactool\HyperfStableDiffusion;
             }
             $input = array_merge($input, $this->inputParams);
 
+            $json = [
+                'version' => $this->getVersion(),
+                'input' => $input,
+            ];
+
+            if (! empty($this->webhook)) {
+                $json['webhook'] = $this->webhook;
+            }
+
             $response = $this->client()->post(
                 $this->getBaseUrl(),
                 [
-                    'json' => [
-                        'version' => $this->getVersion(),
-                        'input' => $input,
-                    ],
+                    'json' => $json,
                 ]
             );
 
