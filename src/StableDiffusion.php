@@ -156,6 +156,7 @@ namespace Imactool\HyperfStableDiffusion;
                 $url = $this->apiBase->fetchUrl($id);
             }
             if ($this->apiBase instanceof DreamboothApiV4) {
+                $this->payload['request_id'] = $id;
                 $url = $this->apiBase->fetchUrl();
             }
 
