@@ -246,7 +246,7 @@ namespace Imactool\HyperfStableDiffusion;
         private function client(): ClientInterface
         {
             return ApplicationContext::getContainer()->get(ClientFactory::class)->create([
-                //                'timeout' => 10,
+                'timeout' => 600,
                 'headers' => [
                     'Accept' => 'application/json',
                     'Content-Type' => 'application/json',
