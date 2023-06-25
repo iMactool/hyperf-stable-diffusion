@@ -24,7 +24,7 @@ namespace Imactool\HyperfStableDiffusion;
 
         private array $inputParams = [];
 
-        private string $baseUrl = '';
+        private string $baseUrl = 'https://api.replicate.com/v1/predictions';
 
         private string $token = '';
 
@@ -140,6 +140,55 @@ namespace Imactool\HyperfStableDiffusion;
             return $result;
         }
 
+        public function list()
+        {
+            $response = self::make()
+                ->client()
+                ->get($this->getBaseUrl());
+
+            if ($response->getStatusCode() !== 200) {
+                throw new Exception('Failed to retrieve data.');
+            }
+
+            return json_decode((string) $response->getBody(), true);
+        }
+
+        public function getModel($model_owner, $model_name)
+        {
+            if (empty($model_name) || empty($model_owner)) {
+                throw new Exception("model_owner or model_name can't be empty.");
+            }
+            $uri = 'https://api.replicate.com/v1/models/' . trim($model_owner) . '/' . trim($model_name);
+
+            $response = self::make()
+                ->client()
+                ->get($uri);
+
+            if ($response->getStatusCode() !== 200) {
+                throw new Exception('Failed to retrieve data.');
+            }
+
+            return json_decode((string) $response->getBody(), true);
+        }
+
+        public function getModelVersion($model_owner, $model_name, $version_id)
+        {
+            if (empty($model_name) || empty($model_owner) || empty($version_id)) {
+                throw new Exception("model_owner、version_id or model_name can't be empty.");
+            }
+            $uri = 'https://api.replicate.com/v1/models/' . trim($model_owner) . '/' . trim($model_name) . '/versions/' . $version_id;
+
+            $response = self::make()
+                ->client()
+                ->get($uri);
+
+            if ($response->getStatusCode() !== 200) {
+                throw new Exception('Failed to retrieve data.');
+            }
+
+            return json_decode((string) $response->getBody(), true);
+        }
+
         public function withPrompt(Prompt $prompt)
         {
             $this->prompt = $prompt;
@@ -241,7 +290,7 @@ namespace Imactool\HyperfStableDiffusion;
                 StableDiffusionResult::create($data);
             } catch (Exception $exception) {
                 $msg = $exception->getMessage();
-                var_dump(['data insert error' => $msg]);
+//                var_dump(['data insert error' => $msg]);
                 if ($exception instanceof PDOException) {
                     $errorInfo = $exception->errorInfo;
                     $code = $errorInfo[1];
@@ -260,7 +309,7 @@ namespace Imactool\HyperfStableDiffusion;
         {
             return ApplicationContext::getContainer()->get(ClientFactory::class)->create([
                 //                'base_uri' => $this->getBaseUrl(),
-                //                'timeout' => 10,
+                'timeout' => 600,
                 'headers' => [
                     'Authorization' => 'Token ' . $this->getToken(),
                     'Accept' => 'application/json',
