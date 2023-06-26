@@ -24,7 +24,7 @@ namespace Imactool\HyperfStableDiffusion;
 
         private array $inputParams = [];
 
-        private string $baseUrl = 'https://api.replicate.com/v1/predictions';
+        private string $baseUrl = '';
 
         private string $token = '';
 
