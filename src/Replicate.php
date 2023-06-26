@@ -279,7 +279,7 @@ namespace Imactool\HyperfStableDiffusion;
                 'platform' => self::$platform,
                 'user_prompt' => $this->prompt->userPrompt(),
                 'full_prompt' => $this->prompt->toString($this->inputParams),
-                'url' => $result['urls']['get'],
+                'url' => str_replace('https://api.replicate.com/v1/predictions', $this->getBaseUrl(), $result['urls']['get']),
                 'status' => $result['status'],
                 'output' => isset($result['output']) ? $result['output'] : null,
                 'error' => $result['error'],
