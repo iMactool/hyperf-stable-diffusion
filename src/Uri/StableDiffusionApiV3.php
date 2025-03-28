@@ -12,7 +12,7 @@ namespace Imactool\HyperfStableDiffusion\Uri;
 
     class StableDiffusionApiV3
     {
-        public const ORIGIN = 'https://stablediffusionapi.com/api';
+        public const ORIGIN = 'https://modelslab.com/api';
 
         public const API_VERSION = 'v3';
 

@@ -215,7 +215,7 @@ namespace Imactool\HyperfStableDiffusion;
             }
 
             $response = $this->client()->post(
-                'https://stablediffusionapi.com/api/v5/controlnet',
+                'https://modelslab.com/api/v5/controlnet',
                 [
                     'json' => $this->payload,
                 ]
