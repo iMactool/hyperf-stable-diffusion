@@ -14,28 +14,28 @@ namespace Imactool\HyperfStableDiffusion\Uri;
     {
         public const ORIGIN = 'https://modelslab.com/api';
 
-        public const API_VERSION = 'v3';
+        public const API_VERSION = 'v6';
 
         public const OPEN_AI_URL = self::ORIGIN . '/' . self::API_VERSION;
 
         public  function text2imgUrl(): string
         {
-            return self::OPEN_AI_URL . '/text2img';
+            return self::OPEN_AI_URL . '/realtime/text2img';
         }
 
         public  function img2imgUrl(): string
         {
-            return self::OPEN_AI_URL . '/img2img';
+            return self::OPEN_AI_URL . '/realtime/img2img';
         }
 
          public  function inpaintUrl(): string
          {
-             return self::OPEN_AI_URL . '/inpaint';
+             return self::OPEN_AI_URL . '/realtime/inpaint';
          }
 
          public  function fetchUrl($id): string
          {
-             return self::OPEN_AI_URL . '/fetch/' . $id;
+             return self::OPEN_AI_URL . '/realtime/fetch/' . $id;
          }
 
         public  function systemLoadUrl(): string
